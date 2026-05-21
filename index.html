@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patriks plats</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: #F5F1EB;
+    color: #1A1714;
+    font-family: 'Georgia', serif;
+    min-height: 100vh;
+  }
+  .page { max-width: 580px; margin: 0 auto; padding: 44px 24px 80px; }
+
+  .header {
+    border-bottom: 1.5px solid #1A1714;
+    padding-bottom: 18px;
+    margin-bottom: 36px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .header h1 { font-size: 32px; font-weight: 400; letter-spacing: -0.02em; line-height: 1; }
+  .header .sub { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #9C9080; margin-top: 6px; font-family: monospace; }
+  .header .desc { font-size: 11px; color: #9C9080; margin-top: 8px; font-style: italic; line-height: 1.5; }
+  .header .updated { font-size: 10px; color: #9C9080; text-align: right; font-family: monospace; letter-spacing: 0.05em; }
+
+  .today-card {
+    background: #1A1714;
+    border-radius: 6px;
+    padding: 26px 28px;
+    margin-bottom: 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .today-label { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 8px; font-family: monospace; }
+  .today-loc { font-size: 30px; color: #F5F1EB; letter-spacing: -0.01em; }
+  .today-loc.oklart { color: #7a7060; font-style: italic; }
+  .today-prel { font-size: 11px; color: rgba(255,255,255,0.4); margin-left: 10px; font-family: monospace; letter-spacing: 0.1em; text-transform: uppercase; vertical-align: middle; }
+  .today-dot { width: 10px; height: 10px; border-radius: 50%; background: #A8E6B8; box-shadow: 0 0 0 4px rgba(168,230,184,0.25); flex-shrink: 0; animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.4)} }
+
+  .section-label { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #9C9080; margin-bottom: 20px; font-family: monospace; }
+
+  .period {
+    display: grid;
+    grid-template-columns: 110px 20px 1fr;
+    gap: 0 14px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+  }
+  .period.visible { opacity: 1; transform: translateY(0); }
+
+  .date-col { font-family: monospace; font-size: 11px; color: #8C8076; padding: 18px 0; line-height: 1.5; }
+  .day-count { font-size: 9px; opacity: 0.6; margin-top: 2px; }
+
+  .line-col { display: flex; flex-direction: column; align-items: center; padding: 18px 0; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid #1A1714; background: #1A1714; flex-shrink: 0; margin-top: 2px; }
+  .dot.oklart { border-color: #C4BBA8; background: #F5F1EB; }
+  .line-seg { width: 1px; flex: 1; background: #DDD8CE; margin-top: 4px; }
+
+  .content-col { padding: 16px 0; border-bottom: 1px solid #E8E2D8; }
+  .content-col.last { border-bottom: none; }
+  .loc-name { font-size: 15px; color: #1A1714; font-weight: 400; letter-spacing: 0.01em; }
+  .loc-name.oklart { font-style: italic; color: #B8AF9E; }
+
+  .badge {
+    display: inline-block; margin-top: 6px; font-size: 9px;
+    letter-spacing: 0.12em; text-transform: uppercase; font-family: monospace;
+    padding: 2px 8px; border-radius: 2px;
+  }
+  .badge.prel { background: #f5f0e8; color: #8a7a5a; border: 1px dashed #c9b98a; }
+
+  .footer {
+    margin-top: 56px; padding-top: 18px; border-top: 1px solid #DDD8CE;
+    display: flex; justify-content: space-between;
+    font-size: 10px; color: #9C9080; font-family: monospace; letter-spacing: 0.06em;
+  }
+
+  @media (max-width: 480px) {
+    .page { padding: 32px 16px 60px; }
+    .header h1 { font-size: 26px; }
+    .today-card { padding: 20px; }
+    .today-loc { font-size: 24px; }
+    .period { grid-template-columns: 95px 16px 1fr; gap: 0 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>Patriks plats</h1>
+      <div class="sub">Närmaste 60 dagarna</div>
+      <div class="desc">Datum avser platsen där Patrik<br>vilar huvudet på kudden</div>
+    </div>
+    <div class="updated">Uppdaterat<br>21 maj 2026</div>
+  </div>
+
+  <div class="today-card">
+    <div>
+      <div class="today-label" id="today-label"></div>
+      <div id="today-loc"></div>
+    </div>
+    <div class="today-dot"></div>
+  </div>
+
+  <div class="section-label">Kommande perioder</div>
+  <div id="timeline"></div>
+
+  <div class="footer">
+    <span>patrik.eriksson</span>
+    <span>Kalender: Plats</span>
+  </div>
+
+</div>
+<script>
+const EVENTS = [
+  { start: "2026-05-20", end: "2026-05-25", title: "STOCKHOLM!" },
+  { start: "2026-05-26", end: "2026-05-27", title: "TJÖRN!" },
+  { start: "2026-05-28", end: "2026-05-28", title: "TJÖRN Prel" },
+  { start: "2026-05-29", end: "2026-06-01", title: "MALMÖ!" },
+  { start: "2026-06-02", end: "2026-06-02", title: "Malmö PREL" },
+  { start: "2026-06-03", end: "2026-06-04", title: "STOCKHOLM!" },
+  { start: "2026-06-05", end: "2026-06-07", title: "MALMÖ!" },
+  { start: "2026-06-08", end: "2026-06-08", title: "Malmö PREL" },
+  { start: "2026-06-09", end: "2026-06-09", title: "TJÖRN!" },
+  { start: "2026-06-10", end: "2026-06-17", title: "NORRLAND" },
+  { start: "2026-06-18", end: "2026-06-21", title: "TJÖRN!" },
+  { start: "2026-06-27", end: "2026-06-28", title: "SUNDSVALL!" },
+  { start: "2026-06-29", end: "2026-07-05", title: "TJÖRN!" },
+];
+
+const COLORS = {
+  STOCKHOLM: { bg: "#ddeaf6", fg: "#1e4a73" },
+  TJÖRN:     { bg: "#d9f0e4", fg: "#1a5c35" },
+  MALMÖ:     { bg: "#f5e4e1", fg: "#6e2a1e" },
+  NORRLAND:  { bg: "#dde8f5", fg: "#2e4f6e" },
+  SUNDSVALL: { bg: "#ebe3f5", fg: "#4a2e6e" },
+};
+
+function parseTitle(raw) {
+  const t = raw.trim();
+  if (t.endsWith("!")) return { name: t.slice(0,-1).trim(), status: "confirmed" };
+  if (t.toUpperCase().endsWith(" PREL")) return { name: t.slice(0,-5).trim(), status: "prel" };
+  return { name: t, status: "none" };
+}
+
+function getColor(name) {
+  return COLORS[name.toUpperCase()] || { bg: "#eae7e2", fg: "#5C5046" };
+}
+
+function toDate(s) {
+  const [y,m,d] = s.split("-").map(Number);
+  return new Date(y, m-1, d);
+}
+
+function dateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
+function fmtShort(d) {
+  return d.toLocaleDateString("sv-SE", { day:"numeric", month:"short" });
+}
+
+function buildDayMap() {
+  const map = {};
+  for (const ev of EVENTS) {
+    let cur = toDate(ev.start);
+    const limit = new Date(toDate(ev.end).getTime() + 86400000);
+    while (cur < limit) { map[dateKey(cur)] = ev.title; cur = new Date(cur.getTime()+86400000); }
+  }
+  return map;
+}
+
+function buildPeriods(from, days) {
+  const map = buildDayMap();
+  const periods = [], end = new Date(from.getTime() + days*86400000);
+  let cur = new Date(from), pStart = null, pLoc = null;
+  while (cur <= end) {
+    const loc = map[dateKey(cur)] || "Oklart";
+    if (!pLoc) { pStart = new Date(cur); pLoc = loc; }
+    else if (loc !== pLoc) { periods.push({start:new Date(pStart),end:new Date(cur),title:pLoc}); pStart=new Date(cur); pLoc=loc; }
+    cur = new Date(cur.getTime()+86400000);
+  }
+  if (pStart) periods.push({start:new Date(pStart),end:new Date(cur),title:pLoc});
+  return periods;
+}
+
+function daysBetween(a,b) { return Math.round((b-a)/86400000); }
+
+function formatRange(start, end) {
+  const last = new Date(end.getTime()-86400000);
+  const days = daysBetween(start,end);
+  if (days===1) return fmtShort(start);
+  if (start.getMonth()===last.getMonth()) return `${start.getDate()}–${fmtShort(last)}`;
+  return `${fmtShort(start)} – ${fmtShort(last)}`;
+}
+
+// Use actual today
+const TODAY = new Date();
+TODAY.setHours(0,0,0,0);
+
+const map = buildDayMap();
+const todayLoc = map[dateKey(TODAY)] || "Oklart";
+
+// Today card
+document.getElementById("today-label").textContent =
+  "Idag · " + TODAY.toLocaleDateString("sv-SE", {weekday:"long", day:"numeric", month:"long"});
+
+const todayDiv = document.getElementById("today-loc");
+if (todayLoc === "Oklart") {
+  todayDiv.innerHTML = '<span class="today-loc oklart">Oklart</span>';
+} else {
+  const {name, status} = parseTitle(todayLoc);
+  const display = name.charAt(0) + name.slice(1).toLowerCase();
+  todayDiv.innerHTML = `<span class="today-loc">${display}${status==="prel"?'<span class="today-prel">prel</span>':""}</span>`;
+}
+
+// Timeline
+const periods = buildPeriods(new Date(TODAY.getTime()+86400000), 59);
+const tl = document.getElementById("timeline");
+
+periods.forEach((p, i) => {
+  const isOklart = p.title === "Oklart";
+  const {name, status} = isOklart ? {name:"Oklart",status:"none"} : parseTitle(p.title);
+  const col = isOklart ? {} : getColor(name);
+  const days = daysBetween(p.start, p.end);
+  const isLast = i === periods.length-1;
+  const display = name.charAt(0) + name.slice(1).toLowerCase();
+
+  let badgeHTML = "";
+  if (!isOklart && status==="confirmed") badgeHTML = `<span class="badge" style="background:${col.bg};color:${col.fg}">bekräftat</span>`;
+  if (!isOklart && status==="prel") badgeHTML = `<span class="badge prel">preliminärt</span>`;
+
+  const div = document.createElement("div");
+  div.className = "period";
+  div.innerHTML = `
+    <div class="date-col">${formatRange(p.start,p.end)}<div class="day-count">${days} dag${days!==1?"ar":""}</div></div>
+    <div class="line-col">
+      <div class="dot${isOklart?" oklart":""}"></div>
+      ${!isLast?'<div class="line-seg"></div>':""}
+    </div>
+    <div class="content-col${isLast?" last":""}">
+      <div class="loc-name${isOklart?" oklart":""}">${isOklart?"Oklart":display}</div>
+      ${badgeHTML}
+    </div>
+  `;
+  tl.appendChild(div);
+  setTimeout(() => div.classList.add("visible"), 80 + i*60);
+});
+</script>
+</body>
+</html>
