@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patriks schema</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #F5F1EB; color: #1A1714; font-family: Georgia, serif; min-height: 100vh; }
+  .page { max-width: 620px; margin: 0 auto; padding: 44px 24px 80px; }
+
+  .header { border-bottom: 1.5px solid #1A1714; padding-bottom: 18px; margin-bottom: 36px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .header h1 { font-size: 32px; font-weight: 400; letter-spacing: -0.02em; line-height: 1; }
+  .header .sub { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #9C9080; margin-top: 6px; font-family: monospace; }
+  .header .updated { font-size: 10px; color: #9C9080; text-align: right; font-family: monospace; letter-spacing: 0.05em; }
+
+  .today-card { background: #1A1714; border-radius: 6px; padding: 26px 28px; margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center; }
+  .today-label { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 8px; font-family: monospace; }
+  .today-loc { font-size: 30px; color: #F5F1EB; letter-spacing: -0.01em; }
+  .today-loc.oklart { color: #7a7060; font-style: italic; }
+  .today-prel { font-size: 11px; color: rgba(255,255,255,0.35); margin-left: 10px; font-family: monospace; letter-spacing: 0.1em; text-transform: uppercase; vertical-align: middle; }
+  .today-dot { width: 10px; height: 10px; border-radius: 50%; background: #A8E6B8; box-shadow: 0 0 0 4px rgba(168,230,184,0.25); flex-shrink: 0; animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.4)} }
+
+  .section-label { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #9C9080; margin-bottom: 20px; font-family: monospace; }
+
+  .period { display: grid; grid-template-columns: 110px 20px 1fr; gap: 0 14px; opacity: 0; transform: translateY(10px); transition: opacity 0.35s ease, transform 0.35s ease; }
+  .period.visible { opacity: 1; transform: translateY(0); }
+
+  .date-col { font-family: monospace; font-size: 11px; color: #8C8076; padding: 18px 0; line-height: 1.5; }
+  .day-count { font-size: 9px; opacity: 0.6; margin-top: 2px; }
+
+  .line-col { display: flex; flex-direction: column; align-items: center; padding: 18px 0; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid #1A1714; background: #1A1714; flex-shrink: 0; margin-top: 2px; }
+  .dot.oklart { border-color: #C4BBA8; background: #F5F1EB; }
+  .line-seg { width: 1px; flex: 1; background: #DDD8CE; margin-top: 4px; }
+
+  .content-col { padding: 16px 0; border-bottom: 1px solid #E8E2D8; }
+  .content-col.last { border-bottom: none; }
+  .loc-name { font-size: 15px; color: #1A1714; letter-spacing: 0.01em; }
+  .loc-name.oklart { font-style: italic; color: #B8AF9E; }
+
+  .badge { display: inline-block; margin-top: 5px; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; font-family: monospace; padding: 2px 8px; border-radius: 2px; }
+  .badge.prel { background: #f5f0e8; color: #8a7a5a; border: 1px dashed #c9b98a; }
+
+  .resor { margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
+  .resa { display: inline-flex; align-items: center; gap: 7px; background: #EDEAE3; border-radius: 3px; padding: 4px 9px; }
+  .resa-icon { font-size: 12px; }
+  .resa-text { font-size: 10px; font-family: monospace; color: #6B6355; letter-spacing: 0.03em; }
+  .resa-time { opacity: 0.65; margin-right: 5px; }
+
+  .footer { margin-top: 56px; padding-top: 18px; border-top: 1px solid #DDD8CE; display: flex; justify-content: space-between; font-size: 10px; color: #9C9080; font-family: monospace; letter-spacing: 0.06em; }
+
+  @media (max-width: 480px) {
+    .page { padding: 32px 16px 60px; }
+    .header h1 { font-size: 26px; }
+    .today-card { padding: 20px; }
+    .today-loc { font-size: 24px; }
+    .period { grid-template-columns: 95px 16px 1fr; gap: 0 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div>
+      <h1>Patriks schema</h1>
+      <div class="sub">Närmaste 180 dagarna · Plats & Resor</div>
+    </div>
+    <div class="updated">Uppdaterat<br>3 jun 2026</div>
+  </div>
+
+  <div class="today-card">
+    <div>
+      <div class="today-label" id="today-label"></div>
+      <div id="today-loc"></div>
+    </div>
+    <div class="today-dot"></div>
+  </div>
+
+  <div class="section-label">Kommande perioder</div>
+  <div id="timeline"></div>
+
+  <div class="footer">
+    <span>patrik.eriksson</span>
+    <span>Kalender: Plats + Resor</span>
+  </div>
+</div>
+
+<script>
+const PLATS = [
+  { start: "2026-06-02", end: "2026-06-06", title: "STOCKHOLM!" },
+  { start: "2026-06-07", end: "2026-06-07", title: "MALMÖ!" },
+  { start: "2026-06-08", end: "2026-06-09", title: "TJÖRN!" },
+  { start: "2026-06-10", end: "2026-06-10", title: "TJÖRN Prel" },
+  { start: "2026-06-11", end: "2026-06-14", title: "MALMÖ!" },
+  { start: "2026-06-15", end: "2026-06-21", title: "TJÖRN!" },
+  { start: "2026-06-22", end: "2026-06-26", title: "KLIPPEN!" },
+  { start: "2026-06-27", end: "2026-06-28", title: "SUNDSVALL!" },
+  { start: "2026-06-29", end: "2026-07-05", title: "TJÖRN!" },
+  { start: "2026-07-06", end: "2026-07-19", title: "KLIPPEN Prel" },
+  { start: "2026-07-20", end: "2026-08-02", title: "Malmö PREL" },
+  { start: "2026-08-03", end: "2026-08-16", title: "KLIPPEN Prel" },
+  { start: "2026-09-10", end: "2026-09-13", title: "Alicante Tobbe 50 år!" },
+  { start: "2026-09-18", end: "2026-09-20", title: "ENAFORS!" },
+  { start: "2026-10-08", end: "2026-10-11", title: "MALMÖ!" },
+];
+
+const RESOR = [
+  { date: "2026-06-07", time: "08:23", title: "SJ Stockholm – Malmö", icon: "🚂" },
+  { date: "2026-06-08", time: "08:21", title: "Tåg till Kristianstad", icon: "🚂" },
+  { date: "2026-06-29", time: "11:00", title: "Bil till Tjörn", icon: "🚗" },
+  { date: "2026-09-11", time: "08:00", title: "Flyg Copenhagen – Alicante", icon: "✈️" },
+  { date: "2026-09-14", time: "13:30", title: "Flyg Alicante – Copenhagen", icon: "✈️" },
+];
+
+const COLORS = {
+  STOCKHOLM: { bg: "#ddeaf6", fg: "#1e4a73" },
+  TJÖRN:     { bg: "#d9f0e4", fg: "#1a5c35" },
+  MALMÖ:     { bg: "#f5e4e1", fg: "#6e2a1e" },
+  KLIPPEN:   { bg: "#fdf3dc", fg: "#7a5a10" },
+  SUNDSVALL: { bg: "#ebe3f5", fg: "#4a2e6e" },
+  ALICANTE:  { bg: "#fde8d0", fg: "#7a3a10" },
+  ENAFORS:   { bg: "#dff0f5", fg: "#1a5060" },
+};
+
+function parseTitle(raw) {
+  const t = raw.trim();
+  if (t.endsWith("!")) return { name: t.slice(0,-1).trim(), status: "confirmed" };
+  if (t.toUpperCase().endsWith(" PREL")) return { name: t.slice(0,-5).trim(), status: "prel" };
+  return { name: t, status: "none" };
+}
+
+function getColor(name) {
+  return COLORS[name.toUpperCase()] || { bg: "#eae7e2", fg: "#5C5046" };
+}
+
+function toDate(s) { const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); }
+function dateKey(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+function fmtShort(d) { return d.toLocaleDateString("sv-SE",{day:"numeric",month:"short"}); }
+function daysBetween(a,b) { return Math.round((b-a)/86400000); }
+
+function formatRange(start, end) {
+  const last = new Date(end.getTime()-86400000);
+  const days = daysBetween(start,end);
+  if (days===1) return fmtShort(start);
+  if (start.getMonth()===last.getMonth()) return `${start.getDate()}–${fmtShort(last)}`;
+  return `${fmtShort(start)} – ${fmtShort(last)}`;
+}
+
+function buildDayMap() {
+  const map = {};
+  for (const ev of PLATS) {
+    let cur = toDate(ev.start);
+    const limit = new Date(toDate(ev.end).getTime()+86400000);
+    while (cur < limit) { map[dateKey(cur)]=ev.title; cur=new Date(cur.getTime()+86400000); }
+  }
+  return map;
+}
+
+function buildResorMap() {
+  const map = {};
+  for (const r of RESOR) { if (!map[r.date]) map[r.date]=[]; map[r.date].push(r); }
+  return map;
+}
+
+function buildPeriods(from, days) {
+  const dayMap = buildDayMap(), resorMap = buildResorMap();
+  const end = new Date(from.getTime()+days*86400000);
+  const periods = [];
+  let cur = new Date(from), pStart=null, pLoc=null;
+  while (cur<=end) {
+    const loc = dayMap[dateKey(cur)]||"Oklart";
+    if (!pLoc) { pStart=new Date(cur); pLoc=loc; }
+    else if (loc!==pLoc) { periods.push({start:new Date(pStart),end:new Date(cur),title:pLoc,resor:[]}); pStart=new Date(cur); pLoc=loc; }
+    cur=new Date(cur.getTime()+86400000);
+  }
+  if (pStart) periods.push({start:new Date(pStart),end:new Date(cur),title:pLoc,resor:[]});
+  for (const p of periods) {
+    let d=new Date(p.start);
+    while (d<p.end) { const k=dateKey(d); if (resorMap[k]) p.resor.push(...resorMap[k]); d=new Date(d.getTime()+86400000); }
+  }
+  return periods;
+}
+
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+const dayMap = buildDayMap();
+const todayLoc = dayMap[dateKey(TODAY)]||"Oklart";
+
+document.getElementById("today-label").textContent =
+  "Idag · "+TODAY.toLocaleDateString("sv-SE",{weekday:"long",day:"numeric",month:"long"});
+
+const todayDiv = document.getElementById("today-loc");
+if (todayLoc==="Oklart") {
+  todayDiv.innerHTML='<span class="today-loc oklart">Oklart</span>';
+} else {
+  const {name,status}=parseTitle(todayLoc);
+  const display=name.charAt(0)+name.slice(1).toLowerCase();
+  todayDiv.innerHTML=`<span class="today-loc">${display}${status==="prel"?'<span class="today-prel">prel</span>':""}</span>`;
+}
+
+const periods = buildPeriods(new Date(TODAY.getTime()+86400000), 179);
+const tl = document.getElementById("timeline");
+
+periods.forEach((p,i) => {
+  const isOklart = p.title==="Oklart";
+  const {name,status} = isOklart ? {name:"Oklart",status:"none"} : parseTitle(p.title);
+  const col = isOklart ? {} : getColor(name);
+  const days = daysBetween(p.start,p.end);
+  const isLast = i===periods.length-1;
+  const display = name.charAt(0)+name.slice(1).toLowerCase();
+
+  let badgeHTML="";
+  if (!isOklart && status==="confirmed") badgeHTML=`<span class="badge" style="background:${col.bg};color:${col.fg}">bekräftat</span>`;
+  if (!isOklart && status==="prel") badgeHTML=`<span class="badge prel">preliminärt</span>`;
+
+  let resorHTML="";
+  if (p.resor.length>0) {
+    resorHTML='<div class="resor">'+p.resor.map(r=>`
+      <div class="resa">
+        <span class="resa-icon">${r.icon}</span>
+        <span class="resa-text">${r.time?`<span class="resa-time">${r.time}</span>`:""}${r.title}</span>
+      </div>`).join("")+"</div>";
+  }
+
+  const div=document.createElement("div");
+  div.className="period";
+  div.innerHTML=`
+    <div class="date-col">${formatRange(p.start,p.end)}<div class="day-count">${days} dag${days!==1?"ar":""}</div></div>
+    <div class="line-col">
+      <div class="dot${isOklart?" oklart":""}"></div>
+      ${!isLast?'<div class="line-seg"></div>':""}
+    </div>
+    <div class="content-col${isLast?" last":""}">
+      <div class="loc-name${isOklart?" oklart":""}">${isOklart?"Oklart":display}</div>
+      ${badgeHTML}
+      ${resorHTML}
+    </div>`;
+  tl.appendChild(div);
+  setTimeout(()=>div.classList.add("visible"), 60+i*50);
+});
+</script>
+</body>
+</html>
